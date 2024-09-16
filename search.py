@@ -75,40 +75,40 @@ def tinyMazeSearch(problem):
     w = Directions.WEST
     return  [s, s, w, s, w, w, s, w]
 
-def constructPath(map, start, goal):
-    """
-    Returns the path of coordinates using map 
-    """
-    path = []
-    current = goal
+# def constructPath(map, start, goal):
+#     """
+#     Returns the path of coordinates using map 
+#     """
+#     path = []
+#     current = goal
 
-    while current != start:
-        path.append(current)
-        current = map[current]
+#     while current != start:
+#         path.append(current)
+#         current = map[current]
 
-    path.append(start)
-    path.reverse()
-    return path
+#     path.append(start)
+#     path.reverse()
+#     return path
 
-def constructDirections(path):
-    """
-    Returns NESW directions from coordinate path 
-    """
-    if len(path) < 2:
-        return []
+# def constructDirections(path):
+#     """
+#     Returns NESW directions from coordinate path 
+#     """
+#     if len(path) < 2:
+#         return []
     
-    directions = []
+#     directions = []
 
-    for i in range(1, len(path)):
-        print(path)
-        curr = path[i]
-        prev = path[i-1]
-        print(type(curr))
-        print(curr)
-        vector = (curr[0] - prev[0], curr[1] - prev[1])
-        directions.append(Actions.vectorToDirection(vector))
+#     for i in range(1, len(path)):
+#         print(path)
+#         curr = path[i]
+#         prev = path[i-1]
+#         print(type(curr))
+#         print(curr)
+#         vector = (curr[0] - prev[0], curr[1] - prev[1])
+#         directions.append(Actions.vectorToDirection(vector))
     
-    return directions
+#     return directions
 
 def depthFirstSearch(problem):
     """
@@ -126,101 +126,80 @@ def depthFirstSearch(problem):
     """
     "*** YOUR CODE HERE ***"
 
-    stack = Stack()
-    visited = set()
-    map = {}
-
     start_state = problem.getStartState()
-    stack.push(start_state)
+    
+    if problem.isGoalState(start_state):
+        return []
+
+    stack = util.Stack()
+    visited = []
+    stack.push((start_state, []))
 
     while not stack.isEmpty():
-        parent = stack.pop()
-
+        parent, actions = stack.pop()
+        
         if parent not in visited:
+            visited.append(parent)
 
             if problem.isGoalState(parent):
-                return constructDirections(constructPath(map, start_state, parent))
+                return actions
             
-            visited.add(parent)
             children = problem.getSuccessors(parent)
-            
-            for child_full in children:
-                child = child_full[0]
 
-                if child not in visited:
-                    stack.push(child)
-                    map[child] = parent
-    return []
+            for child in children:
+                stack.push((child[0], actions + [child[1]]))
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
 
-    queue = Queue() 
-    visited = set()
-    map = {}
-
     start_state = problem.getStartState()
-    queue.push(start_state)
+    if problem.isGoalState(start_state):
+        return []
+
+    queue = Queue()
+    visited = []
+    queue.push((start_state, []))
 
     while not queue.isEmpty():
-        parent = queue.pop()
+        parent, actions = queue.pop()
 
         if parent not in visited:
+            visited.append(parent)
 
             if problem.isGoalState(parent):
-                return constructDirections(constructPath(map, start_state, parent))
+                return actions
 
-            visited.add(parent)
             children = problem.getSuccessors(parent)
 
-            for child_full in children:
-                child = child_full[0]
-
-                if child not in visited:  
-                    queue.push(child)
-                    map[child] = parent
-
-    return []
-
+            for child in children:
+                queue.push((child[0], actions + [child[1]]))
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
         
-    pq = PriorityQueue()
-    visited = set()
-    cost_map = {}
-    path_map = {}
-
     start_state = problem.getStartState()
-    pq.push(start_state, 0)  
-    cost_map[start_state] = 0
+    if problem.isGoalState(start_state):
+        return []
 
-    while not pq.isEmpty():
-        parent = pq.pop()
-        parent_cost = cost_map[parent]  
+    visited = []
+    queue = PriorityQueue()
+    queue.push((start_state, [], 0), 0)
 
-        if parent in visited:
-            continue
+    while not queue.isEmpty():
+        parent, actions, parent_cost = queue.pop()
+        if parent not in visited:
+            visited.append(parent)
 
-        if problem.isGoalState(parent):
-            return constructDirections(constructPath(path_map, start_state, parent))
+            if problem.isGoalState(parent):
+                print(actions)
+                return actions
+            
+            children = problem.getSuccessors(parent)
 
-        visited.add(parent)
-
-        children = problem.getSuccessors(parent)
-        for child_full in children:
-            child = child_full[0]
-            child_cost = child_full[2]
-
-            new_cost = parent_cost + child_cost
-
-            if child not in visited:
-                if child not in cost_map or new_cost < cost_map[child]:
-                    cost_map[child] = new_cost
-                    path_map[child] = parent
-                    pq.update(child, new_cost) 
-
-    return []
+            for child in children:
+                priority = parent_cost + child[2]
+                tup = (child[0], child[1], priority)
+                queue.push(tup, priority)
 
 def nullHeuristic(state, problem=None):
     """
