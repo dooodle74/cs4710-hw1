@@ -294,14 +294,20 @@ class CornersProblem(search.SearchProblem):
         Returns the start state (in your state space, not the full Pacman state
         space)
         """
-        return (self.startingPosition, self.corners)
+        return (self.startingPosition, [])
 
     def isGoalState(self, state):
         """
         Returns whether this search state is a goal state of the problem.
         """
-        pacman, corners = state
-        return len(list(corners)) == 0
+        node = state[0]
+        visitedCorners = state[1]
+
+        if node in self.corners:
+            if not node in visitedCorners:
+                visitedCorners.append(node)
+            return len(visitedCorners) == 4
+        return False
 
     def getSuccessors(self, state):
         """
@@ -314,6 +320,8 @@ class CornersProblem(search.SearchProblem):
             is the incremental cost of expanding to that successor
         """
 
+        x, y = state[0]
+        visitedCorners = state[1]
         successors = []
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
             # Add a successor state to the successor list if the action is legal
@@ -323,22 +331,20 @@ class CornersProblem(search.SearchProblem):
             #   nextx, nexty = int(x + dx), int(y + dy)
             #   hitsWall = self.walls[nextx][nexty]
 
-            currentPosition, corners = state
-            x, y = currentPosition
+            "*** YOUR CODE HERE ***"
             dx, dy = Actions.directionToVector(action)
-            next = int(x + dx), int(y + dy)
-            nextx, nexty = next
+            nextx, nexty = int(x + dx), int(y + dy)
             hitsWall = self.walls[nextx][nexty]
-
-            new_corners = set(corners)
-            if next in new_corners:
-                new_corners.remove(next)
-
             if not hitsWall:
-                successors.append((((nextx, nexty), tuple(new_corners)), action, 1))
+                successorVisitedCorners = list(visitedCorners)
+                next_node = (nextx, nexty)
+                if next_node in self.corners:
+                    if next_node not in successorVisitedCorners:
+                        successorVisitedCorners.append(next_node)
+                successor = ((next_node, successorVisitedCorners), action, 1)
+                successors.append(successor)
 
-
-        self._expanded += 1 # DO NOT CHANGE
+        self._expanded += 1  # DO NOT CHANGE
         return successors
 
 
@@ -372,22 +378,24 @@ def cornersHeuristic(state, problem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
-    position, corners = state
-    corners_left = list(corners)
-    def manhattan_dist(xy1, xy2):
-        return abs(xy1[0] - xy2[0]) + abs(xy1[1] - xy2[1])
+    visitedCorners = state[1]
+    cornersLeftToVisit = []
+    for corner in corners:
+        if corner not in visitedCorners:
+            cornersLeftToVisit.append(corner)
 
-    total_dist = 0
-    next_point = position
-    while corners_left:
-        dists = map(lambda c: (manhattan_dist(next_point, c), c), corners_left)
-        sorted_dists = sorted(dists, None, lambda elem: elem[0])
-        dist, nearest = sorted_dists[0]
-        total_dist += dist
-        corners_left.remove(nearest)
-        next_point = nearest
-    return total_dist
-    return 0
+    # While not all corners are visited find via manhattanDistance
+    #  the most efficient path for each corner
+    totalCost = 0
+    coordinate = state[0]
+    curPoint = coordinate
+    while cornersLeftToVisit:
+        heuristic_cost, corner = \
+            min([(util.manhattanDistance(curPoint, corner), corner) for corner in cornersLeftToVisit])
+        cornersLeftToVisit.remove(corner)
+        curPoint = corner
+        totalCost += heuristic_cost
+    return totalCost
 
 
 class AStarCornersAgent(SearchAgent):
@@ -482,7 +490,7 @@ def foodHeuristic(state, problem):
     """
     position, foodGrid = state
     "*** YOUR CODE HERE ***"
-    return 0
+    food_list = foodGrid.asList()
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"

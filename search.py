@@ -198,7 +198,7 @@ def uniformCostSearch(problem):
 
             for child in children:
                 priority = parent_cost + child[2]
-                tup = (child[0], child[1], priority)
+                tup = (child[0], actions + [child[1]], priority)
                 queue.push(tup, priority)
 
 def nullHeuristic(state, problem=None):
@@ -211,43 +211,30 @@ def nullHeuristic(state, problem=None):
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
 
-    pq = PriorityQueue()
-    visited = set()
-    cost_map = {}
-    path_map = {}
-
     start_state = problem.getStartState()
-    pq.push(start_state, 0)  # Push start state with a priority of f(n) = g(n) + h(n)
-    cost_map[start_state] = 0
+    if problem.isGoalState(start_state):
+        return []
 
-    while not pq.isEmpty():
-        parent = pq.pop()
-        parent_cost = cost_map[parent]  # g(n), the actual cost to reach this node
+    visited = []
 
-        if parent in visited:
-            continue
+    queue = PriorityQueue()
+    queue.push((start_state, [], 0), 0)
 
-        if problem.isGoalState(parent):
-            return constructDirections(constructPath(path_map, start_state, parent))
+    while not queue.isEmpty():
+        parent, actions, parent_cost = queue.pop()
 
-        visited.add(parent)
+        if parent not in visited:
+            visited.append(parent)
 
-        children = problem.getSuccessors(parent)
-        for child_full in children:
-            child = child_full[0]
-            child_cost = child_full[2]
+            if problem.isGoalState(parent):
+                return actions
 
-            new_cost = parent_cost + child_cost  # g(n) + cost(child)
-            heuristic_cost = heuristic(child, problem)  # h(n), the heuristic estimate
-            total_cost = new_cost + heuristic_cost  # f(n) = g(n) + h(n)
-
-            if child not in visited:
-                if child not in cost_map or new_cost < cost_map[child]:
-                    cost_map[child] = new_cost
-                    path_map[child] = parent
-                    pq.update(child, total_cost)  # Priority is based on f(n) = g(n) + h(n)
-
-    return []
+            children = problem.getSuccessors(parent)
+            
+            for child in children:
+                new_cost = parent_cost + child[2]
+                tup = (child[0], actions + [child[1]], new_cost)
+                queue.push(tup, new_cost + heuristic(child[0], problem))
 
 
 # Abbreviations
